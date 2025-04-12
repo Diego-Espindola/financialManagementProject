@@ -23,10 +23,10 @@ class Movement:
     def insert(self):
         print("inserting on the dataBase")
 
-
-    def find(id)
+    def find(self, *arg):
+        pass
+        #maybe find by some key, I think id is bether
     
-    @staticmethod
     def update(self):
         print(f"updating id {self.idMovement}")
 
