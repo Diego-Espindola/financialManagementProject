@@ -1,14 +1,16 @@
+import sqlite3
 from dataclasses import dataclass
 from datetime import date
 from enum import Enum
+
 
 class MovementType(Enum):
     INCOME = "income"
     EXPENSE = "expense"
 
+
 @dataclass
 class Movement:
-    """Here will be the financial movements"""
     idMovement: int
     value: float
     description: str
@@ -18,36 +20,64 @@ class Movement:
 
     def __post_init__(self):
         if not isinstance(self.movType, MovementType):
-            raise ValueError("The movType is not a instance of MovementType Enum")
-        
-    def insert(self):
-        print("inserting on the dataBase")
+            raise ValueError("movType must be an instance of MovementType")
 
-    def find(self, *arg):
-        pass
-        #maybe find by some key, I think id is bether
-    
+    @staticmethod
+    def connect():
+        conn = sqlite3.connect("movements.db")
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS movements (
+                idMovement INTEGER PRIMARY KEY,
+                value REAL,
+                description TEXT,
+                idCategory INTEGER,
+                movDate TEXT,
+                movType TEXT
+            )
+        ''')
+        return conn
+
+    def insert(self):
+        conn = self.connect()
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO movements (idMovement, value, description, idCategory, movDate, movType)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (self.idMovement, self.value, self.description, self.idCategory, self.movDate.isoformat(), self.movType.value))
+        conn.commit()
+        conn.close()
+        print(f"Inserted movement {self.idMovement}")
+
+    @staticmethod
+    def find(idMovement):
+        conn = Movement.connect()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM movements WHERE idMovement = ?', (idMovement,))
+        result = cursor.fetchone()
+        conn.close()
+        return result
+
     def update(self):
-        print(f"updating id {self.idMovement}")
+        conn = self.connect()
+        cursor = conn.cursor()
+        cursor.execute('''
+            UPDATE movements SET
+                value = ?,
+                description = ?,
+                idCategory = ?,
+                movDate = ?,
+                movType = ?
+            WHERE idMovement = ?
+        ''', (self.value, self.description, self.idCategory, self.movDate.isoformat(), self.movType.value, self.idMovement))
+        conn.commit()
+        conn.close()
+        print(f"Updated movement {self.idMovement}")
 
     @staticmethod
     def delete(idMovement):
-        print(f"deleting id {idMovement}")
-
-
-Movement(500, "Salário", 1, date.today(), MovementType.INCOME).insert()
-Movement.update(500)
-Movement.delete(500)
-
-
-"""
-def __init__(self, value, description, idCategory, movDate, movType):
-        self.value = value
-        self.description = description
-        self.idCategory = idCategory
-        self.movDate = movDate
-        self.movType = movType
-"""
-
-    
-
+        conn = Movement.connect()
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM movements WHERE idMovement = ?', (idMovement,))
+        conn.commit()
+        conn.close()
+        print(f"Deleted movement {idMovement}")
